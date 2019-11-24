@@ -1,16 +1,10 @@
 use {
-    hyper::{
-        Body, Method, Request, Response, Server, StatusCode,
-        service::service_fn,
-        rt::{run},
-    },
     futures::{
         compat::Future01CompatExt,
         future::{FutureExt, TryFutureExt},
     },
-    queryst,
-    reqwest,
-    serde_json,
+    hyper::{rt::run, service::service_fn, Body, Method, Request, Response, Server, StatusCode},
+    queryst, reqwest, serde_json,
     std::net::SocketAddr,
 };
 
@@ -27,14 +21,14 @@ async fn serve_req(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 
     if city == "" {
         *response.status_mut() = StatusCode::BAD_REQUEST;
-        return Ok(response)
+        return Ok(response);
     }
 
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/weather") => {
             let temperature = weather::get_current_temperature(city, units);
-            *response.body_mut() = Body::from(serde_json::json!({
-                "current_temperature": temperature}).to_string())
+            *response.body_mut() =
+                Body::from(serde_json::json!({ "current_temperature": temperature }).to_string())
         }
         (&Method::GET, "/forecast") => {
             let forecast = weather::get_forecast(city, units);
@@ -51,8 +45,8 @@ async fn serve_req(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 async fn run_server(addr: SocketAddr) {
     println!("Listening on http://{}", addr);
 
-    let serve_future = Server::bind(&addr)
-        .serve(|| service_fn(|req| serve_req(req).boxed().compat()));
+    let serve_future =
+        Server::bind(&addr).serve(|| service_fn(|req| serve_req(req).boxed().compat()));
 
     if let Err(e) = serve_future.compat().await {
         eprintln!("server error: {}", e);
