@@ -14,23 +14,7 @@ use {
     std::net::SocketAddr,
 };
 
-fn get_current_temperature(city: String, units: String) -> String {
-    let url_str = format!(
-        "http://api.openweathermap.org/data/2.5/weather?q={}&units={}&APPID=347492b4193159e8965692864ec168ea",
-        city, units);
-    let body = reqwest::get(&url_str).unwrap().text().unwrap();
-    let json_response : serde_json::Value = serde_json::from_str(&body).unwrap();
-    json_response["main"]["temp"].to_string()
-}
-
-fn get_forecast(city: String, units: String) -> String {
-    let url_str = format!(
-        "http://api.openweathermap.org/data/2.5/forecast?q={}&units={}&APPID=347492b4193159e8965692864ec168ea",
-        city, units);
-    let body = reqwest::get(&url_str).unwrap().text().unwrap();
-    let json_response : serde_json::Value = serde_json::from_str(&body).unwrap();
-    serde_json::json!(json_response["list"]).to_string()
-}
+mod weather;
 
 async fn serve_req(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     let mut response = Response::new(Body::empty());
@@ -48,12 +32,12 @@ async fn serve_req(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/weather") => {
-            let temperature = get_current_temperature(city, units);
+            let temperature = weather::get_current_temperature(city, units);
             *response.body_mut() = Body::from(serde_json::json!({
                 "current_temperature": temperature}).to_string())
         }
         (&Method::GET, "/forecast") => {
-            let forecast = get_forecast(city, units);
+            let forecast = weather::get_forecast(city, units);
             *response.body_mut() = Body::from(forecast)
         }
         _ => {
